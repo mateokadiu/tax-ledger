@@ -1,0 +1,31 @@
+{
+  "name": "tax-ledger",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Line-item tax splitter + reconciliation engine. Sits downstream of Avalara/TaxJar/Stripe Tax, produces a per-line per-jurisdiction per-tax-type ledger that sums back without drift.",
+  "license": "MIT",
+  "author": "Mateo Kadiu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mateokadiu/tax-ledger.git"
+  },
+  "homepage": "https://github.com/mateokadiu/tax-ledger#readme",
+  "bugs": "https://github.com/mateokadiu/tax-ledger/issues",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "example": "pnpm --filter @tax-ledger/example-basic start"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.2"
+  }
+}
