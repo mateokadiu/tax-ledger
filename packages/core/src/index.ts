@@ -1,2 +1,3 @@
-// Placeholder — types and functions land in the next commit.
-export const VERSION = '0.1.0';
+export * from './types.js';
+export * from './errors.js';
+export { uuidv7 } from './ids.js';

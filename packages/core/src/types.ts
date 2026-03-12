@@ -1,0 +1,147 @@
+import { z } from 'zod';
+
+// ---------- Jurisdiction ----------
+
+export const JurisdictionTypeSchema = z.enum(['country', 'state', 'county', 'city', 'special']);
+export type JurisdictionType = z.infer<typeof JurisdictionTypeSchema>;
+
+export const JurisdictionSchema = z.object({
+  type: JurisdictionTypeSchema,
+  code: z.string().min(1),
+});
+export type Jurisdiction = z.infer<typeof JurisdictionSchema>;
+
+// ---------- Tax types ----------
+
+export const TaxTypeSchema = z.enum(['sales', 'shipping', 'bottle_deposit', 'additional']);
+export type TaxType = z.infer<typeof TaxTypeSchema>;
+
+// ---------- Input ----------
+
+/**
+ * One per-jurisdiction tax detail emitted by the tax engine. amountCents is the
+ * engine's already-computed cents — the splitter does not recompute rates.
+ */
+export const LineItemTaxSchema = z.object({
+  jurisdiction: JurisdictionSchema,
+  taxType: z.enum(['sales', 'shipping', 'additional']),
+  amountCents: z.number().int().nonnegative(),
+});
+export type LineItemTax = z.infer<typeof LineItemTaxSchema>;
+
+/** Bottle / container deposit. Sits alongside taxes — same row shape downstream. */
+export const LineItemDepositSchema = z.object({
+  jurisdiction: JurisdictionSchema,
+  amountCents: z.number().int().nonnegative(),
+});
+export type LineItemDeposit = z.infer<typeof LineItemDepositSchema>;
+
+export const LineItemSchema = z.object({
+  lineItemId: z.string().min(1),
+  quantity: z.number().int().positive(),
+  unitAmountCents: z.number().int().nonnegative(),
+  taxes: z.array(LineItemTaxSchema),
+  deposits: z.array(LineItemDepositSchema).default([]),
+});
+export type LineItem = z.infer<typeof LineItemSchema>;
+
+export const FeeSchema = z.object({
+  feeKind: z.string().min(1), // shipping | service | platform | tip | bag | retail_delivery | ...
+  amountCents: z.number().int().nonnegative(),
+  taxes: z.array(LineItemTaxSchema).default([]),
+});
+export type Fee = z.infer<typeof FeeSchema>;
+
+/**
+ * The engine-agnostic input. Whatever you got from Avalara / TaxJar / Stripe Tax,
+ * you map into this shape (an adapter package will do it for you in v0.2).
+ *
+ * `totalTaxCents` is the engine's declared total tax. We assert against the sum
+ * of every line/fee tax detail and fail loudly if they disagree by more than the
+ * configured rounding tolerance.
+ */
+export const OrderInputSchema = z.object({
+  orderId: z.string().min(1),
+  currency: z.string().length(3),
+  engineRef: z.string().min(1),
+  totalTaxCents: z.number().int().nonnegative(),
+  lines: z.array(LineItemSchema).min(1),
+  fees: z.array(FeeSchema).default([]),
+});
+export type OrderInput = z.input<typeof OrderInputSchema>;
+export type OrderInputParsed = z.output<typeof OrderInputSchema>;
+
+// ---------- Output: LedgerEntry ----------
+
+export const LedgerScopeSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('line'), lineItemId: z.string().min(1) }),
+  z.object({ kind: z.literal('fee'), feeKind: z.string().min(1) }),
+  z.object({ kind: z.literal('order'), reason: z.literal('rounding_residual') }),
+]);
+export type LedgerScope = z.infer<typeof LedgerScopeSchema>;
+
+export const LedgerOriginSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('split'), engineRef: z.string().min(1) }),
+  z.object({ kind: z.literal('refund'), refundId: z.string().min(1) }),
+  z.object({ kind: z.literal('capture'), captureId: z.string().min(1) }),
+  z.object({ kind: z.literal('revision'), revisionId: z.string().min(1) }),
+]);
+export type LedgerOrigin = z.infer<typeof LedgerOriginSchema>;
+
+export const LedgerEntrySchema = z.object({
+  id: z.string().min(1),
+  orderId: z.string().min(1),
+  currency: z.string().length(3),
+  scope: LedgerScopeSchema,
+  jurisdiction: JurisdictionSchema,
+  taxType: TaxTypeSchema,
+  amountCents: z.number().int(), // signed: deltas are negative
+  origin: LedgerOriginSchema,
+  createdAt: z.string().min(1), // ISO-8601
+});
+export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
+
+// ---------- Specs (refund / capture / revise) ----------
+
+export const RefundLineSchema = z
+  .object({
+    lineItemId: z.string().min(1),
+    quantity: z.number().int().positive().optional(),
+    amountCents: z.number().int().positive().optional(),
+  })
+  .refine((s) => s.quantity != null || s.amountCents != null, {
+    message: 'RefundLine requires either quantity or amountCents',
+  });
+export type RefundLine = z.infer<typeof RefundLineSchema>;
+
+export const RefundFeeSchema = z.object({
+  feeKind: z.string().min(1),
+  amountCents: z.number().int().positive().optional(), // omitted = full refund
+});
+export type RefundFee = z.infer<typeof RefundFeeSchema>;
+
+export const RefundSpecSchema = z
+  .object({
+    refundId: z.string().min(1),
+    lines: z.array(RefundLineSchema).default([]),
+    fees: z.array(RefundFeeSchema).default([]),
+    reason: z.string().optional(),
+  })
+  .refine((s) => s.lines.length > 0 || s.fees.length > 0, {
+    message: 'RefundSpec must refund at least one line or fee',
+  });
+export type RefundSpec = z.input<typeof RefundSpecSchema>;
+export type RefundSpecParsed = z.output<typeof RefundSpecSchema>;
+
+export const CaptureSpecSchema = z.object({
+  captureId: z.string().min(1),
+  capturedAmountCents: z.number().int().nonnegative(),
+  originalAmountCents: z.number().int().positive(),
+});
+export type CaptureSpec = z.infer<typeof CaptureSpecSchema>;
+
+export const ReviseSpecSchema = z.object({
+  revisionId: z.string().min(1),
+  newOrder: OrderInputSchema,
+});
+export type ReviseSpec = z.input<typeof ReviseSpecSchema>;
