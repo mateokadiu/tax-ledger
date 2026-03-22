@@ -26,7 +26,7 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'lint TBD'",
-    "test": "echo 'no tests yet'"
+    "test": "vitest run"
   },
   "dependencies": {
     "decimal.js": "^10.4.3",
@@ -34,8 +34,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "fast-check": "^3.23.0",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   },
   "publishConfig": { "access": "public" }
 }
