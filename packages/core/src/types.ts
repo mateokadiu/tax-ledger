@@ -60,11 +60,28 @@ export type Fee = z.infer<typeof FeeSchema>;
  * of every line/fee tax detail and fail loudly if they disagree by more than the
  * configured rounding tolerance.
  */
+/**
+ * Address-pair context for multi-jurisdiction orders. Most engines emit one
+ * row per (jurisdiction, taxType) on each line already — the splitter does
+ * not infer jurisdictions, just preserves them. ShippingContext is informational
+ * (carried on the ledger via row.jurisdiction) and used by adapters to label
+ * jurisdictions correctly.
+ */
+export const ShippingContextSchema = z
+  .object({
+    shipFrom: JurisdictionSchema.optional(),
+    shipTo: JurisdictionSchema.optional(),
+    transit: z.array(JurisdictionSchema).default([]),
+  })
+  .optional();
+export type ShippingContext = z.infer<typeof ShippingContextSchema>;
+
 export const OrderInputSchema = z.object({
   orderId: z.string().min(1),
   currency: z.string().length(3),
   engineRef: z.string().min(1),
   totalTaxCents: z.number().int().nonnegative(),
+  shipping: ShippingContextSchema,
   lines: z.array(LineItemSchema).min(1),
   fees: z.array(FeeSchema).default([]),
 });
