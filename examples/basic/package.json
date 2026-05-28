@@ -1,0 +1,21 @@
+{
+  "name": "@tax-ledger/example-basic",
+  "version": "0.0.0",
+  "private": true,
+  "description": "End-to-end example: Avalara-shaped order → split → refund → revise → print the ledger.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx run.ts",
+    "build": "echo 'no build'",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "@tax-ledger/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

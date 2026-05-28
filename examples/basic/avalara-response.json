@@ -1,0 +1,41 @@
+{
+  "code": "ORDER-123",
+  "totalTax": 4.12,
+  "totalAmount": 56.50,
+  "lines": [
+    {
+      "lineNumber": "1",
+      "ref1": "A",
+      "lineAmount": 49.98,
+      "tax": 2.31,
+      "details": [
+        { "jurisdictionType": "State",  "jurisdictionCode": "NY",      "taxType": "Sales",  "tax": 1.50 },
+        { "jurisdictionType": "County", "jurisdictionCode": "NY-NYC",  "taxType": "Sales",  "tax": 0.45 },
+        { "jurisdictionType": "City",   "jurisdictionCode": "NY-NYC",  "taxType": "Sales",  "tax": 0.36 }
+      ],
+      "extraDeposits": [
+        { "jurisdictionType": "State", "jurisdictionCode": "NY", "amount": 10.00 }
+      ]
+    },
+    {
+      "lineNumber": "2",
+      "ref1": "B",
+      "lineAmount": 19.99,
+      "tax": 1.78,
+      "details": [
+        { "jurisdictionType": "State",  "jurisdictionCode": "NY",     "taxType": "Sales", "tax": 1.20 },
+        { "jurisdictionType": "County", "jurisdictionCode": "NY-NYC", "taxType": "Sales", "tax": 0.36 },
+        { "jurisdictionType": "City",   "jurisdictionCode": "NY-NYC", "taxType": "Sales", "tax": 0.22 }
+      ]
+    },
+    {
+      "lineNumber": "3",
+      "ref1": "shippingFee",
+      "lineAmount": 6.52,
+      "tax": 0.03,
+      "details": [
+        { "jurisdictionType": "State", "jurisdictionCode": "NY", "taxType": "Shipping", "tax": 0.03 }
+      ]
+    }
+  ]
+}
