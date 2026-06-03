@@ -1,0 +1,124 @@
+{
+  "id": "taxcalc_1234567",
+  "object": "tax.calculation",
+  "amount_total": 7625,
+  "currency": "usd",
+  "customer": "cus_abc",
+  "expires_at": 1788000000,
+  "livemode": false,
+  "tax_amount_exclusive": 622,
+  "tax_amount_inclusive": 0,
+  "tax_date": 1751000000,
+  "line_items": {
+    "object": "list",
+    "data": [
+      {
+        "id": "tax_li_aaaa",
+        "object": "tax.calculation_line_item",
+        "amount": 4998,
+        "amount_tax": 458,
+        "livemode": false,
+        "product": null,
+        "quantity": 2,
+        "reference": "A",
+        "tax_behavior": "exclusive",
+        "tax_code": "txcd_99999999",
+        "tax_breakdown": [
+          {
+            "amount": 325,
+            "inclusive": false,
+            "jurisdiction": {
+              "country": "US",
+              "level": "state",
+              "display_name": "Washington",
+              "state": "WA"
+            },
+            "sourcing": "destination",
+            "tax_rate_details": {
+              "display_name": "Sales Tax",
+              "percentage_decimal": "6.5",
+              "tax_type": "sales_tax"
+            },
+            "taxability_reason": "standard_rated",
+            "taxable_amount": 4998
+          },
+          {
+            "amount": 75,
+            "inclusive": false,
+            "jurisdiction": {
+              "country": "US",
+              "level": "county",
+              "display_name": "King",
+              "state": "WA"
+            },
+            "sourcing": "destination",
+            "tax_rate_details": {
+              "display_name": "Sales Tax",
+              "percentage_decimal": "1.5",
+              "tax_type": "sales_tax"
+            },
+            "taxability_reason": "standard_rated",
+            "taxable_amount": 4998
+          },
+          {
+            "amount": 58,
+            "inclusive": false,
+            "jurisdiction": {
+              "country": "US",
+              "level": "city",
+              "display_name": "Seattle",
+              "state": "WA"
+            },
+            "sourcing": "destination",
+            "tax_rate_details": {
+              "display_name": "Sales Tax",
+              "percentage_decimal": "1.15",
+              "tax_type": "sales_tax"
+            },
+            "taxability_reason": "standard_rated",
+            "taxable_amount": 4998
+          }
+        ]
+      },
+      {
+        "id": "tax_li_bbbb",
+        "object": "tax.calculation_line_item",
+        "amount": 2127,
+        "amount_tax": 164,
+        "quantity": 1,
+        "reference": "B",
+        "tax_behavior": "exclusive",
+        "tax_breakdown": [
+          {
+            "amount": 138,
+            "jurisdiction": { "country": "US", "level": "state", "display_name": "Washington", "state": "WA" },
+            "taxable_amount": 2127,
+            "tax_rate_details": { "tax_type": "sales_tax" }
+          },
+          {
+            "amount": 26,
+            "jurisdiction": { "country": "US", "level": "county", "display_name": "King", "state": "WA" },
+            "taxable_amount": 2127,
+            "tax_rate_details": { "tax_type": "sales_tax" }
+          }
+        ]
+      }
+    ],
+    "has_more": false,
+    "url": "/v1/tax/calculations/taxcalc_1234567/line_items"
+  },
+  "shipping_cost": {
+    "amount": 500,
+    "amount_tax": 0,
+    "shipping_rate": null,
+    "tax_behavior": "exclusive",
+    "tax_code": "txcd_92010001",
+    "tax_breakdown": [
+      {
+        "amount": 0,
+        "jurisdiction": { "country": "US", "level": "state", "display_name": "Washington", "state": "WA" },
+        "tax_rate_details": { "tax_type": "sales_tax" }
+      }
+    ]
+  }
+}

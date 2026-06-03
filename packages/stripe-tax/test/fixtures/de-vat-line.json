@@ -1,0 +1,39 @@
+{
+  "id": "taxcalc_eu_001",
+  "object": "tax.calculation",
+  "amount_total": 11900,
+  "currency": "eur",
+  "tax_amount_exclusive": 1900,
+  "tax_amount_inclusive": 0,
+  "line_items": {
+    "object": "list",
+    "data": [
+      {
+        "id": "tax_li_de_1",
+        "amount": 10000,
+        "amount_tax": 1900,
+        "quantity": 1,
+        "reference": "A",
+        "tax_behavior": "exclusive",
+        "tax_breakdown": [
+          {
+            "amount": 1900,
+            "jurisdiction": {
+              "country": "DE",
+              "level": "country",
+              "display_name": "Germany"
+            },
+            "tax_rate_details": {
+              "display_name": "VAT",
+              "percentage_decimal": "19.0",
+              "tax_type": "vat"
+            },
+            "taxability_reason": "standard_rated",
+            "taxable_amount": 10000
+          }
+        ]
+      }
+    ]
+  },
+  "shipping_cost": null
+}
