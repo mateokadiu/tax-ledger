@@ -28,25 +28,27 @@ export interface InsertableDbWithRun extends InsertableDb {
 }
 
 /**
- * Project a single LedgerEntry into the schema's row shape (column → value).
- * Schema is the same shape on PG and SQLite at the runtime-row layer because
- * the columns share names; the type-level differences live in jsonb vs
- * text-json.
+ * Project a single LedgerEntry into the schema's row shape — keyed by the
+ * Drizzle JS field names (which the ORM maps to snake_case columns at SQL
+ * generation time).
+ *
+ * Both the PG and SQLite schemas share these field names, so the same
+ * row works for either dialect.
  */
 export function toEntryRow(
   entry: LedgerEntry,
 ): Record<string, unknown> {
   return {
     id: entry.id,
-    order_id: entry.orderId,
+    orderId: entry.orderId,
     currency: entry.currency,
     scope: entry.scope,
-    jurisdiction_type: entry.jurisdiction.type,
-    jurisdiction_code: entry.jurisdiction.code,
-    tax_type: entry.taxType,
-    amount_cents: entry.amountCents,
+    jurisdictionType: entry.jurisdiction.type,
+    jurisdictionCode: entry.jurisdiction.code,
+    taxType: entry.taxType,
+    amountCents: entry.amountCents,
     origin: entry.origin,
-    created_at: entry.createdAt,
+    createdAt: entry.createdAt,
   };
 }
 
@@ -106,10 +108,10 @@ export async function applyDelta(
   const relation = options.relation ?? inferRelation(delta[0]);
   const linkRows = delta.map((d) => ({
     id: uuidv7(),
-    original_id: originalId,
-    delta_id: d.id,
+    originalId,
+    deltaId: d.id,
     relation,
-    created_at: d.createdAt,
+    createdAt: d.createdAt,
   }));
   await Promise.resolve(db.insert(deltasTable).values(linkRows));
 }

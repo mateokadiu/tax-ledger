@@ -17,3 +17,4 @@ export {
   type Dialect,
   type InsertableDb,
 } from './persist.js';
+export { generateMigration, type MigrationSql } from './migrations.js';
