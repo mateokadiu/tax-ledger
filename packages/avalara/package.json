@@ -1,6 +1,6 @@
 {
   "name": "@tax-ledger/avalara",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Avalara CreateTransactionModel response adapter for @tax-ledger/core. Maps lines[].details[] + jurisdiction breakdown into a normalized TaxInput.",
   "license": "MIT",
   "author": "Mateo Kadiu",

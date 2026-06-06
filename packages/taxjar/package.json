@@ -1,6 +1,6 @@
 {
   "name": "@tax-ledger/taxjar",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "TaxJar `taxes` endpoint response adapter for @tax-ledger/core. Maps the flat per-jurisdiction breakdown into a normalized TaxInput.",
   "license": "MIT",
   "author": "Mateo Kadiu",
