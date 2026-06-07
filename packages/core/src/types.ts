@@ -26,8 +26,12 @@ export type Jurisdiction = z.infer<typeof JurisdictionSchema>;
 
 // ---------- Tax types ----------
 
-export const TaxTypeSchema = z.enum(['sales', 'shipping', 'bottle_deposit', 'additional']);
+export const TaxTypeSchema = z.enum(['sales', 'shipping', 'bottle_deposit', 'vat', 'additional']);
 export type TaxType = z.infer<typeof TaxTypeSchema>;
+
+/** Whether tax was quoted inside the line amount (inclusive) or added on top (exclusive). */
+export const TaxBehaviorSchema = z.enum(['inclusive', 'exclusive']);
+export type TaxBehavior = z.infer<typeof TaxBehaviorSchema>;
 
 // ---------- Input ----------
 
@@ -37,8 +41,14 @@ export type TaxType = z.infer<typeof TaxTypeSchema>;
  */
 export const LineItemTaxSchema = z.object({
   jurisdiction: JurisdictionSchema,
-  taxType: z.enum(['sales', 'shipping', 'additional']),
+  taxType: z.enum(['sales', 'shipping', 'vat', 'additional']),
   amountCents: z.number().int().nonnegative(),
+  /** Engine product tax-category code (e.g. Avalara `PA2020200`, Stripe `txcd_…`). Carried verbatim for reconciliation. */
+  taxCode: z.string().min(1).optional(),
+  /** Whether the engine quoted this tax inclusive of or exclusive to the line amount. */
+  taxBehavior: TaxBehaviorSchema.optional(),
+  /** The engine's native tax-type label (e.g. Avalara `Sales`/`Bottle`, Stripe `vat`/`gst`). Preserved for audit. */
+  engineTaxType: z.string().min(1).optional(),
 });
 export type LineItemTax = z.infer<typeof LineItemTaxSchema>;
 
@@ -135,6 +145,14 @@ export const LedgerEntrySchema = z.object({
   jurisdiction: JurisdictionSchema,
   taxType: TaxTypeSchema,
   amountCents: z.number().int(), // signed: deltas are negative
+  /** Engine product tax-category code, carried from the source tax detail. */
+  taxCode: z.string().min(1).optional(),
+  /** Inclusive vs exclusive, carried from the source tax detail. */
+  taxBehavior: TaxBehaviorSchema.optional(),
+  /** The engine's native tax-type label, carried from the source tax detail. */
+  engineTaxType: z.string().min(1).optional(),
+  /** Original line quantity (set on split-origin line rows; enables quantity-based refunds). */
+  quantity: z.number().int().positive().optional(),
   origin: LedgerOriginSchema,
   createdAt: z.string().min(1), // ISO-8601
 });
