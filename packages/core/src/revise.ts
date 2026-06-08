@@ -1,4 +1,3 @@
-import { uuidv7 } from './ids.js';
 import {
   ReviseSpecSchema,
   type LedgerEntry,
@@ -8,6 +7,7 @@ import {
 } from './types.js';
 import { CurrencyMismatchError } from './errors.js';
 import { split } from './split.js';
+import { resolveContext, type LedgerOptions } from './context.js';
 import type { Ledger } from './ledger.js';
 
 /**
@@ -43,7 +43,7 @@ function keyOf(r: { scope: LedgerEntry['scope']; jurisdiction: LedgerEntry['juri
  * current net. New lines appear as positive deltas. Address changes look
  * like: old-jurisdiction zeroes out, new-jurisdiction appears.
  */
-export function revise(ledger: Ledger, spec: ReviseSpec): LedgerEntry[] {
+export function revise(ledger: Ledger, spec: ReviseSpec, opts?: LedgerOptions): LedgerEntry[] {
   const parsed = ReviseSpecSchema.parse(spec);
   if (parsed.newOrder.currency !== ledger.currency) {
     throw new CurrencyMismatchError(
@@ -52,7 +52,7 @@ export function revise(ledger: Ledger, spec: ReviseSpec): LedgerEntry[] {
     );
   }
   const origin: LedgerOrigin = { kind: 'revision', revisionId: parsed.revisionId };
-  const createdAt = new Date().toISOString();
+  const { createdAt, nextId } = resolveContext(opts);
 
   // Build the prior rollup from the live ledger.
   const priorRollup = new Map<string, { net: number; row: LedgerEntry }>();
@@ -67,7 +67,7 @@ export function revise(ledger: Ledger, spec: ReviseSpec): LedgerEntry[] {
   }
 
   // Build the new rollup from a fresh split of newOrder.
-  const newLedger = split(parsed.newOrder);
+  const newLedger = split(parsed.newOrder, opts);
   const newRollup = new Map<string, { net: number; row: LedgerEntry }>();
   for (const r of newLedger.rows) {
     const k = keyOf(r);
@@ -89,13 +89,16 @@ export function revise(ledger: Ledger, spec: ReviseSpec): LedgerEntry[] {
     const delta = v.net - priorNet;
     if (delta === 0) continue;
     out.push({
-      id: uuidv7(),
+      id: nextId(),
       orderId: ledger.orderId,
       currency: ledger.currency,
       scope: v.row.scope,
       jurisdiction: v.row.jurisdiction,
       taxType: v.row.taxType,
       amountCents: delta,
+      taxCode: v.row.taxCode,
+      taxBehavior: v.row.taxBehavior,
+      engineTaxType: v.row.engineTaxType,
       origin,
       createdAt,
     });
@@ -106,13 +109,16 @@ export function revise(ledger: Ledger, spec: ReviseSpec): LedgerEntry[] {
     if (seen.has(k)) continue;
     if (v.net === 0) continue;
     out.push({
-      id: uuidv7(),
+      id: nextId(),
       orderId: ledger.orderId,
       currency: ledger.currency,
       scope: v.row.scope,
       jurisdiction: v.row.jurisdiction,
       taxType: v.row.taxType,
       amountCents: -v.net,
+      taxCode: v.row.taxCode,
+      taxBehavior: v.row.taxBehavior,
+      engineTaxType: v.row.engineTaxType,
       origin,
       createdAt,
     });

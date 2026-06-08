@@ -1,13 +1,13 @@
-import { uuidv7 } from './ids.js';
 import {
   RefundSpecSchema,
   type LedgerEntry,
   type LedgerOrigin,
   type RefundSpec,
 } from './types.js';
-import { OverRefundError } from './errors.js';
+import { OverRefundError, TaxLedgerError } from './errors.js';
 import { allocate } from './allocator.js';
 import { dec } from './money.js';
+import { resolveContext, type LedgerOptions } from './context.js';
 import type { Ledger } from './ledger.js';
 
 /**
@@ -15,23 +15,23 @@ import type { Ledger } from './ledger.js';
  * ledger entries with origin={ kind: 'refund', refundId } and signed
  * (negative) amountCents.
  *
- * Allocation strategy: for each refunded line, compute the ratio of refunded
- * value to *remaining net* value, then for each row apply that ratio with
- * largest-remainder so the per-(jurisdiction, taxType) bucket sums exactly to
- * the refunded portion. Deposits are treated identically to taxes — same row
- * shape, same allocation.
+ * Allocation strategy: for each refunded line, resolve the cents to remove
+ * (either supplied directly or derived from a quantity), then allocate that
+ * amount across the line's rows with largest-remainder so the per-(jurisdiction,
+ * taxType) buckets sum back exactly. Deposits are treated identically to taxes.
  *
  * The refund spec can express either:
- *   - quantity-based refund (refund N units of L items)
+ *   - quantity-based refund (refund N units of line L)
  *   - cents-based refund (refund $X of value on line L)
  *
- * Throws OverRefundError if the requested refund exceeds the current
- * remaining quantity / value on a line or fee.
+ * Throws OverRefundError if the requested refund exceeds the current remaining
+ * quantity / value on a line or fee. Pass `opts` ({ now, generateId }) for
+ * deterministic, replayable output.
  */
-export function refund(ledger: Ledger, spec: RefundSpec): LedgerEntry[] {
+export function refund(ledger: Ledger, spec: RefundSpec, opts?: LedgerOptions): LedgerEntry[] {
   const parsed = RefundSpecSchema.parse(spec);
   const origin: LedgerOrigin = { kind: 'refund', refundId: parsed.refundId };
-  const createdAt = new Date().toISOString();
+  const { createdAt, nextId } = resolveContext(opts);
   const delta: LedgerEntry[] = [];
 
   for (const refundLine of parsed.lines) {
@@ -51,8 +51,13 @@ export function refund(ledger: Ledger, spec: RefundSpec): LedgerEntry[] {
     if (refundLine.amountCents != null) {
       refundCents = refundLine.amountCents;
     } else {
-      // quantity-based: ratio of refunded qty to remaining qty * remainingNet
+      // quantity-based: refund a proportional slice of the remaining net.
       const remainingQty = computeRemainingQuantity(ledger, refundLine.lineItemId);
+      if (remainingQty == null) {
+        throw new TaxLedgerError(
+          `cannot refund ${refundLine.quantity} units of ${refundLine.lineItemId}: the ledger has no persisted line quantity — pass amountCents instead`,
+        );
+      }
       if (refundLine.quantity! > remainingQty) {
         throw new OverRefundError(
           `cannot refund ${refundLine.quantity} units of ${refundLine.lineItemId}: remaining qty=${remainingQty}`,
@@ -63,9 +68,9 @@ export function refund(ledger: Ledger, spec: RefundSpec): LedgerEntry[] {
           },
         );
       }
-      // exact = remainingNet * qty / remainingQty, but we don't compute a
-      // line-level total — we allocate per (jurisdiction, taxType) group so
-      // each group sums right.
+      // exact = remainingNet * qty / remainingQty. We don't compute a
+      // line-level total — allocateRefundOverRows re-distributes per row so
+      // each (jurisdiction, taxType) bucket sums right.
       refundCents = dec(remainingNet).times(refundLine.quantity!).div(remainingQty).round().toNumber();
     }
 
@@ -83,6 +88,7 @@ export function refund(ledger: Ledger, spec: RefundSpec): LedgerEntry[] {
         refundCents,
         origin,
         createdAt,
+        nextId,
       }),
     );
   }
@@ -113,6 +119,7 @@ export function refund(ledger: Ledger, spec: RefundSpec): LedgerEntry[] {
         refundCents,
         origin,
         createdAt,
+        nextId,
       }),
     );
   }
@@ -121,27 +128,29 @@ export function refund(ledger: Ledger, spec: RefundSpec): LedgerEntry[] {
 }
 
 /**
- * Compute the line's remaining quantity by looking at the original split rows
- * and any quantity-reducing refund deltas. v0.1 doesn't carry quantity on
- * delta rows directly — we recover it from the ratio of current net to
- * per-unit net at split time. For now: if the line still has any positive
- * net rows, we treat full quantity as available. This is conservative but
- * correct for the v0.1 invariants. Quantity tracking lands in v0.2.
+ * Recover a line's remaining quantity from its ledger rows. We persist the
+ * original quantity on every split-origin line row, so:
+ *
+ *   remainingQty = round(currentNet * originalQty / originalNet)
+ *
+ * where `originalNet` is the line's split-time net and `currentNet` folds in
+ * any refund/capture deltas already applied. This matches how a proportional
+ * partial refund actually scales the line.
+ *
+ * Returns `null` when the quantity can't be determined (a ledger constructed
+ * without `split`, or pre-quantity data) — callers should fall back to an
+ * explicit `amountCents` refund.
  */
-function computeRemainingQuantity(ledger: Ledger, lineItemId: string): number {
-  // First-pass: derive original quantity from the split-origin rows. Since
-  // OrderInput.lines carries quantity but isn't persisted on the ledger
-  // entry, we encode quantity in a different way: the caller passes a
-  // sensible quantity, and refundCents is computed from the *net ratio*.
-  // For commit #5 we assume full-line refunds via amountCents or partial via
-  // an explicit amountCents; quantity-based partial refunds are exercised in
-  // commit #6 once we track quantity-per-line.
-  // Conservative fallback: assume 1 unit remaining → quantity refunds map
-  // 1:1 to full-line refunds. Callers can always use amountCents for
-  // precision.
-  void ledger;
-  void lineItemId;
-  return 1;
+function computeRemainingQuantity(ledger: Ledger, lineItemId: string): number | null {
+  const lineRows = ledger.rowsForLine(lineItemId);
+  const splitRows = lineRows.filter((r) => r.origin.kind === 'split');
+  const originalQty = splitRows.find((r) => r.quantity != null)?.quantity;
+  if (originalQty == null || originalQty <= 0) return null;
+  const originalNet = splitRows.reduce((a, r) => a + r.amountCents, 0);
+  if (originalNet <= 0) return null;
+  const currentNet = lineRows.reduce((a, r) => a + r.amountCents, 0);
+  const remaining = Math.round((currentNet * originalQty) / originalNet);
+  return Math.max(0, Math.min(originalQty, remaining));
 }
 
 interface AllocateOverRowsArgs {
@@ -149,32 +158,42 @@ interface AllocateOverRowsArgs {
   refundCents: number;
   origin: LedgerOrigin;
   createdAt: string;
+  nextId: () => string;
 }
 
 /**
  * Allocate `refundCents` proportionally across `sourceRows` using
- * largest-remainder, and emit a negative delta row per source row.
- * Per-row weight = the row's current amountCents (sign preserved).
+ * largest-remainder, and emit a negative delta row per source row. Per-row
+ * weight = the row's current amountCents.
+ *
+ * The allocation key is the row's stable position (zero-padded) rather than
+ * its id, so the residual cent lands deterministically on the same bucket
+ * regardless of (possibly random) row ids — replay-stable by construction.
  */
 function allocateRefundOverRows(args: AllocateOverRowsArgs): LedgerEntry[] {
   const positiveRows = args.sourceRows.filter((r) => r.amountCents > 0);
   if (positiveRows.length === 0) return [];
 
-  const items = positiveRows.map((r) => ({ key: r.id, weight: dec(r.amountCents) }));
+  const key = (i: number): string => String(i).padStart(8, '0');
+  const items = positiveRows.map((r, i) => ({ key: key(i), weight: dec(r.amountCents) }));
   const allocation = allocate(args.refundCents, items);
   const out: LedgerEntry[] = [];
 
-  for (const r of positiveRows) {
-    const refundedCents = allocation.get(r.id) ?? 0;
+  for (let i = 0; i < positiveRows.length; i++) {
+    const r = positiveRows[i]!;
+    const refundedCents = allocation.get(key(i)) ?? 0;
     if (refundedCents === 0) continue;
     out.push({
-      id: uuidv7(),
+      id: args.nextId(),
       orderId: r.orderId,
       currency: r.currency,
       scope: r.scope,
       jurisdiction: r.jurisdiction,
       taxType: r.taxType,
       amountCents: -refundedCents, // refund is a negative delta
+      taxCode: r.taxCode,
+      taxBehavior: r.taxBehavior,
+      engineTaxType: r.engineTaxType,
       origin: args.origin,
       createdAt: args.createdAt,
     });

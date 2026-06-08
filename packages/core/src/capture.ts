@@ -1,4 +1,3 @@
-import { uuidv7 } from './ids.js';
 import {
   CaptureSpecSchema,
   type CaptureSpec,
@@ -8,6 +7,7 @@ import {
 import { TaxLedgerInvariantError } from './errors.js';
 import { allocate } from './allocator.js';
 import { dec } from './money.js';
+import { resolveContext, type LedgerOptions } from './context.js';
 import type { Ledger } from './ledger.js';
 
 /**
@@ -23,9 +23,10 @@ import type { Ledger } from './ledger.js';
  *
  * Allocation: largest-remainder across all positive-net rows of the live
  * ledger so the per-row signed integer cents sum exactly to the uncaptured
- * total.
+ * total. The allocation key is the row's stable position so residual placement
+ * is replay-stable. Pass `opts` for deterministic ids/timestamps.
  */
-export function partialCapture(ledger: Ledger, spec: CaptureSpec): LedgerEntry[] {
+export function partialCapture(ledger: Ledger, spec: CaptureSpec, opts?: LedgerOptions): LedgerEntry[] {
   const parsed = CaptureSpecSchema.parse(spec);
   if (parsed.capturedAmountCents > parsed.originalAmountCents) {
     throw new TaxLedgerInvariantError(
@@ -40,7 +41,7 @@ export function partialCapture(ledger: Ledger, spec: CaptureSpec): LedgerEntry[]
   if (parsed.capturedAmountCents === parsed.originalAmountCents) return [];
 
   const origin: LedgerOrigin = { kind: 'capture', captureId: parsed.captureId };
-  const createdAt = new Date().toISOString();
+  const { createdAt, nextId } = resolveContext(opts);
   const positiveRows = ledger.rows.filter((r) => r.amountCents > 0);
   if (positiveRows.length === 0) return [];
 
@@ -52,21 +53,26 @@ export function partialCapture(ledger: Ledger, spec: CaptureSpec): LedgerEntry[]
   const uncapturedCents = dec(liveNet).times(uncapturedFraction).round().toNumber();
   if (uncapturedCents <= 0) return [];
 
-  const items = positiveRows.map((r) => ({ key: r.id, weight: dec(r.amountCents) }));
+  const key = (i: number): string => String(i).padStart(8, '0');
+  const items = positiveRows.map((r, i) => ({ key: key(i), weight: dec(r.amountCents) }));
   const allocation = allocate(uncapturedCents, items);
 
   const out: LedgerEntry[] = [];
-  for (const r of positiveRows) {
-    const cents = allocation.get(r.id) ?? 0;
+  for (let i = 0; i < positiveRows.length; i++) {
+    const r = positiveRows[i]!;
+    const cents = allocation.get(key(i)) ?? 0;
     if (cents === 0) continue;
     out.push({
-      id: uuidv7(),
+      id: nextId(),
       orderId: r.orderId,
       currency: r.currency,
       scope: r.scope,
       jurisdiction: r.jurisdiction,
       taxType: r.taxType,
       amountCents: -cents, // uncaptured portion is removed
+      taxCode: r.taxCode,
+      taxBehavior: r.taxBehavior,
+      engineTaxType: r.engineTaxType,
       origin,
       createdAt,
     });

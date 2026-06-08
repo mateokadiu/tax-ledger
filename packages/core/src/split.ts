@@ -1,4 +1,3 @@
-import { uuidv7 } from './ids.js';
 import {
   OrderInputSchema,
   type CurrencyCode,
@@ -7,11 +6,13 @@ import {
   type OrderInputParsed,
   type LedgerOrigin,
   type LedgerScope,
+  type TaxBehavior,
   type TaxType,
 } from './types.js';
 import { TaxLedgerInvariantError } from './errors.js';
 import { sumCents } from './money.js';
 import { Ledger } from './ledger.js';
+import { resolveContext, type LedgerOptions } from './context.js';
 
 const ROUNDING_TOLERANCE_CENTS = 1;
 
@@ -20,17 +21,21 @@ const ROUNDING_TOLERANCE_CENTS = 1;
  *
  * Emits one row per (lineItem, jurisdiction, taxType) plus one row per deposit
  * plus one row per (fee, jurisdiction, taxType). Bottle deposits get the
- * synthetic `taxType: 'bottle_deposit'`.
+ * synthetic `taxType: 'bottle_deposit'`. Line rows carry the line's `quantity`
+ * so quantity-based refunds can recover the original units later.
  *
- * Invariant: sum of emitted rows == input.totalTaxCents + sum(deposits).
- * If the engine's declared totalTaxCents disagrees by more than 1 cent we
- * throw — that's an upstream bug, not something to silently paper over.
- * 1-cent drift is absorbed as a `scope=order, reason=rounding_residual` row.
+ * Invariant: sum of emitted tax rows == input.totalTaxCents (deposits tracked
+ * separately). If the engine's declared totalTaxCents disagrees by more than
+ * 1 cent we throw — that's an upstream bug, not something to silently paper
+ * over. 1-cent drift is absorbed as a `scope=order, reason=rounding_residual`
+ * row.
+ *
+ * Pass `opts` ({ now, generateId }) to make the output deterministic/replayable.
  */
-export function split(input: OrderInput): Ledger {
+export function split(input: OrderInput, opts?: LedgerOptions): Ledger {
   const parsed: OrderInputParsed = OrderInputSchema.parse(input);
   const origin: LedgerOrigin = { kind: 'split', engineRef: parsed.engineRef };
-  const createdAt = new Date().toISOString();
+  const { createdAt, nextId } = resolveContext(opts);
 
   const rows: LedgerEntry[] = [];
 
@@ -38,16 +43,21 @@ export function split(input: OrderInput): Ledger {
     const scope: LedgerScope = { kind: 'line', lineItemId: line.lineItemId };
     for (const t of line.taxes) {
       rows.push(makeRow({
+        id: nextId(),
         orderId: parsed.orderId, currency: parsed.currency,
         scope, jurisdiction: t.jurisdiction, taxType: t.taxType,
         amountCents: t.amountCents, origin, createdAt,
+        taxCode: t.taxCode, taxBehavior: t.taxBehavior, engineTaxType: t.engineTaxType,
+        quantity: line.quantity,
       }));
     }
     for (const d of line.deposits) {
       rows.push(makeRow({
+        id: nextId(),
         orderId: parsed.orderId, currency: parsed.currency,
         scope, jurisdiction: d.jurisdiction, taxType: 'bottle_deposit',
         amountCents: d.amountCents, origin, createdAt,
+        quantity: line.quantity,
       }));
     }
   }
@@ -56,9 +66,11 @@ export function split(input: OrderInput): Ledger {
     const scope: LedgerScope = { kind: 'fee', feeKind: fee.feeKind };
     for (const t of fee.taxes) {
       rows.push(makeRow({
+        id: nextId(),
         orderId: parsed.orderId, currency: parsed.currency,
         scope, jurisdiction: t.jurisdiction, taxType: t.taxType,
         amountCents: t.amountCents, origin, createdAt,
+        taxCode: t.taxCode, taxBehavior: t.taxBehavior, engineTaxType: t.engineTaxType,
       }));
     }
   }
@@ -83,6 +95,7 @@ export function split(input: OrderInput): Ledger {
   }
   if (drift !== 0) {
     rows.push(makeRow({
+      id: nextId(),
       orderId: parsed.orderId, currency: parsed.currency,
       scope: { kind: 'order', reason: 'rounding_residual' },
       // 'special' jurisdiction makes the row queryable but doesn't claim a real jurisdiction.
@@ -118,6 +131,7 @@ export function split(input: OrderInput): Ledger {
 }
 
 function makeRow(args: {
+  id: string;
   orderId: string;
   currency: CurrencyCode;
   scope: LedgerScope;
@@ -126,15 +140,23 @@ function makeRow(args: {
   amountCents: number;
   origin: LedgerOrigin;
   createdAt: string;
+  taxCode?: string;
+  taxBehavior?: TaxBehavior;
+  engineTaxType?: string;
+  quantity?: number;
 }): LedgerEntry {
   return {
-    id: uuidv7(),
+    id: args.id,
     orderId: args.orderId,
     currency: args.currency,
     scope: args.scope,
     jurisdiction: args.jurisdiction,
     taxType: args.taxType,
     amountCents: args.amountCents,
+    taxCode: args.taxCode,
+    taxBehavior: args.taxBehavior,
+    engineTaxType: args.engineTaxType,
+    quantity: args.quantity,
     origin: args.origin,
     createdAt: args.createdAt,
   };
