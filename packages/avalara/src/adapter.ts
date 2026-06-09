@@ -1,6 +1,6 @@
 import type { TaxInput, JurisdictionType } from '@tax-ledger/core';
 
-type LineTaxType = 'sales' | 'shipping' | 'additional';
+type LineTaxType = 'sales' | 'shipping' | 'vat' | 'additional';
 import {
   AvalaraTransactionModelSchema,
   type AvalaraTransactionLine,
@@ -21,9 +21,9 @@ import {
  *   carries `line.quantity` natively so callers rarely need this — useful
  *   when the engine response was created without explicit quantity.
  * - `depositPredicate`: optional predicate to flag a detail as a deposit
- *   (bottle / container) instead of a tax. Defaults to looking for
- *   `taxType === 'BottleDeposit'` (Avalara emits this for NY-style
- *   container deposits).
+ *   (bottle / container) instead of a tax. Defaults to matching Avalara's
+ *   `Bottle` taxType (some integrations emit `BottleDeposit`) and generic
+ *   "container deposit" labels — Avalara emits these for NY-style deposits.
  */
 export interface AvalaraAdapterOptions {
   orderId?: string;
@@ -44,7 +44,7 @@ const DEFAULT_FEE_REFS = new Set([
 ]);
 
 const DEFAULT_DEPOSIT_PREDICATE = (d: AvalaraTransactionLineDetail): boolean =>
-  /bottle.?deposit|container.?deposit/i.test(d.taxType);
+  /bottle|container.?deposit/i.test(d.taxType);
 
 /**
  * Convert an Avalara `CreateTransactionModel` response into the engine-
@@ -109,6 +109,9 @@ export function toTaxInput(
         jurisdiction,
         taxType: mapTaxType(d.taxType),
         amountCents: cents,
+        taxCode: ln.taxCode,
+        taxBehavior: ln.taxIncluded ? 'inclusive' : 'exclusive',
+        engineTaxType: d.taxType,
       });
     }
 
@@ -132,6 +135,9 @@ export function toTaxInput(
         },
         taxType: mapTaxType(d.taxType),
         amountCents: toCents(d.tax),
+        taxCode: ln.taxCode,
+        taxBehavior: ln.taxIncluded ? ('inclusive' as const) : ('exclusive' as const),
+        engineTaxType: d.taxType,
       }));
     return {
       feeKind: normalizeFeeKind(feeKind),
@@ -179,8 +185,10 @@ function mapJurisdictionType(j: AvalaraJurisdictionType): JurisdictionType {
 
 function mapTaxType(t: string): LineTaxType {
   const lc = t.toLowerCase();
-  if (lc === 'sales' || lc.includes('sales')) return 'sales';
-  if (lc === 'shipping' || lc.includes('shipping') || lc.includes('freight')) return 'shipping';
+  if (lc.includes('sales') || lc === 'use' || lc.includes('sellersuse') || lc.includes('consumeruse')) return 'sales';
+  if (lc.includes('shipping') || lc.includes('freight')) return 'shipping';
+  // Avalara models VAT as Input (purchases) / Output (sales) tax types.
+  if (lc === 'input' || lc === 'output' || lc.includes('vat')) return 'vat';
   return 'additional';
 }
 

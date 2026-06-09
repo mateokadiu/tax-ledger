@@ -66,6 +66,14 @@ describe('toTaxInput()', () => {
     ]);
   });
 
+  it('carries the engine taxType + behavior onto every tax row', () => {
+    const input = toTaxInput(loadFixture('ny-three-line.json'));
+    const lineA = input.lines.find((l) => l.lineItemId === 'A')!;
+    const stateSales = lineA.taxes.find((t) => t.jurisdiction.type === 'state')!;
+    expect(stateSales.engineTaxType).toBe('Sales');
+    expect(stateSales.taxBehavior).toBe('exclusive');
+  });
+
   it('separates fee lines from product lines via ref1', () => {
     const input = toTaxInput(loadFixture('ny-three-line.json'));
     expect(input.fees?.[0]?.feeKind).toBe('shipping');
