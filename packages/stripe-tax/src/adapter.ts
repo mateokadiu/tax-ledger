@@ -5,7 +5,7 @@ import {
   type StripeTaxJurisdiction,
 } from './schema.js';
 
-type LineTaxType = 'sales' | 'shipping' | 'additional';
+type LineTaxType = 'sales' | 'shipping' | 'vat' | 'additional';
 
 /**
  * Options for `toTaxInput` against Stripe Tax.
@@ -71,6 +71,9 @@ export function toTaxInput(
         jurisdiction: mapJurisdiction(b.jurisdiction),
         taxType: mapTaxType(b),
         amountCents: b.amount,
+        taxCode: ln.tax_code,
+        taxBehavior: normalizeBehavior(ln.tax_behavior),
+        engineTaxType: b.tax_rate_details?.tax_type,
       }));
     return {
       lineItemId,
@@ -83,17 +86,21 @@ export function toTaxInput(
 
   const fees: TaxInput['fees'] = [];
   const shippingFeeKind = options.feeKindForShipping ?? 'shipping';
-  if (calc.shipping_cost && calc.shipping_cost.amount > 0) {
-    const shippingTaxes = calc.shipping_cost.tax_breakdown
+  const shippingCost = calc.shipping_cost;
+  if (shippingCost && shippingCost.amount > 0) {
+    const shippingTaxes = shippingCost.tax_breakdown
       .filter((b) => b.amount > 0)
       .map((b) => ({
         jurisdiction: mapJurisdiction(b.jurisdiction),
         taxType: 'shipping' as const,
         amountCents: b.amount,
+        taxCode: shippingCost.tax_code,
+        taxBehavior: normalizeBehavior(shippingCost.tax_behavior),
+        engineTaxType: b.tax_rate_details?.tax_type,
       }));
     fees.push({
       feeKind: shippingFeeKind,
-      amountCents: calc.shipping_cost.amount,
+      amountCents: shippingCost.amount,
       taxes: shippingTaxes,
     });
   }
@@ -149,12 +156,22 @@ function pickJurisdictionCode(
 }
 
 function mapTaxType(b: StripeTaxBreakdown): LineTaxType {
-  const taxTypeStr = b.tax_rate_details?.tax_type?.toLowerCase() ?? '';
-  if (taxTypeStr.includes('vat')) return 'additional';
-  if (taxTypeStr.includes('gst') || taxTypeStr.includes('hst')) return 'additional';
-  if (taxTypeStr.includes('shipping')) return 'shipping';
-  // Stripe doesn't have a dedicated shipping tax_type — shipping breakdowns
-  // come from `shipping_cost.tax_breakdown`, mapped to 'shipping' at the
-  // caller. Everything else defaults to 'sales'.
+  const t = b.tax_rate_details?.tax_type?.toLowerCase() ?? '';
+  if (t === 'retail_delivery_fee') return 'additional';
+  // Value-added family: EU VAT, Canada/India GST/HST/IGST, Japan JCT, etc.
+  if (
+    t.includes('vat') || t.includes('gst') || t.includes('hst') ||
+    t === 'igst' || t === 'jct' || t === 'pst' || t === 'qst'
+  ) {
+    return 'vat';
+  }
+  if (t.includes('shipping')) return 'shipping';
+  // sales_tax, rst, or unspecified → US-style sales tax. Shipping tax actually
+  // arrives via `shipping_cost.tax_breakdown`, mapped to 'shipping' at the caller.
   return 'sales';
+}
+
+/** Stripe's `tax_behavior` is `inclusive`|`exclusive`; pass through, else drop. */
+function normalizeBehavior(b: string | undefined): 'inclusive' | 'exclusive' | undefined {
+  return b === 'inclusive' || b === 'exclusive' ? b : undefined;
 }

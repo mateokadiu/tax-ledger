@@ -77,7 +77,7 @@ describe('toTaxInput()', () => {
     expect(taxSum).toBe(622);
   });
 
-  it('maps EU VAT tax_type to taxType: additional with country jurisdiction', () => {
+  it('maps EU VAT tax_type to taxType: vat with country jurisdiction', () => {
     const input = toTaxInput(loadFixture('de-vat-line.json'));
     expect(input.currency).toBe('EUR');
     expect(input.totalTaxCents).toBe(1900);
@@ -85,7 +85,9 @@ describe('toTaxInput()', () => {
     expect(lineA.taxes).toHaveLength(1);
     const row = lineA.taxes[0]!;
     expect(row.jurisdiction).toEqual({ type: 'country', code: 'DE' });
-    expect(row.taxType).toBe('additional');
+    expect(row.taxType).toBe('vat');
+    expect(row.engineTaxType).toBe('vat');
+    expect(row.taxBehavior).toBe('exclusive');
   });
 
   it('emits a shipping fee with non-zero amount, skipping zero-tax breakdowns', () => {
