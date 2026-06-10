@@ -47,6 +47,10 @@ export function toEntryRow(
     jurisdictionCode: entry.jurisdiction.code,
     taxType: entry.taxType,
     amountCents: entry.amountCents,
+    taxCode: entry.taxCode ?? null,
+    taxBehavior: entry.taxBehavior ?? null,
+    engineTaxType: entry.engineTaxType ?? null,
+    quantity: entry.quantity ?? null,
     origin: entry.origin,
     createdAt: entry.createdAt,
   };

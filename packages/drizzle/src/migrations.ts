@@ -23,6 +23,10 @@ const PG_UP = `CREATE TABLE IF NOT EXISTS tax_ledger_entries (
   jurisdiction_code  TEXT NOT NULL,
   tax_type           TEXT NOT NULL,
   amount_cents       BIGINT NOT NULL,
+  tax_code           TEXT,
+  tax_behavior       TEXT,
+  engine_tax_type    TEXT,
+  quantity           INTEGER,
   origin             JSONB NOT NULL,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -70,6 +74,10 @@ const SQLITE_UP = `CREATE TABLE IF NOT EXISTS tax_ledger_entries (
   jurisdiction_code  TEXT NOT NULL,
   tax_type           TEXT NOT NULL,
   amount_cents       INTEGER NOT NULL,
+  tax_code           TEXT,
+  tax_behavior       TEXT,
+  engine_tax_type    TEXT,
+  quantity           INTEGER,
   origin             TEXT NOT NULL,
   created_at         TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

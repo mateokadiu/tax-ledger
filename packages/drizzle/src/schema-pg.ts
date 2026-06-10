@@ -40,6 +40,10 @@ export const taxLedgerEntries = pgTable(
     jurisdictionCode: text('jurisdiction_code').notNull(),
     taxType: text('tax_type').notNull(),
     amountCents: bigint('amount_cents', { mode: 'number' }).notNull(),
+    taxCode: text('tax_code'),
+    taxBehavior: text('tax_behavior'),
+    engineTaxType: text('engine_tax_type'),
+    quantity: integer('quantity'),
     origin: jsonb('origin').$type<Record<string, unknown>>().notNull(),
     createdAt: timestamp('created_at', { mode: 'string', withTimezone: true })
       .notNull()
@@ -82,5 +86,3 @@ export const taxLedgerDeltas = pgTable(
 );
 export type TaxLedgerDeltaRow = typeof taxLedgerDeltas.$inferSelect;
 export type NewTaxLedgerDeltaRow = typeof taxLedgerDeltas.$inferInsert;
-
-void integer; // imported in case downstream consumers want to extend on int columns

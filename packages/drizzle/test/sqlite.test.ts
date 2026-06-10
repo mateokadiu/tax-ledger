@@ -124,6 +124,18 @@ describe('persistLedger()', () => {
     expect((lineA!.origin as { kind: string }).kind).toBe('split');
     expect(lineA!.currency).toBe('USD');
   });
+
+  it('persists the line quantity + nullable engine columns', async () => {
+    const ledger = split(NY);
+    await persistLedger(db, ledger, { dialect: 'sqlite' });
+    const rows = db.select().from(sqliteSchema.taxLedgerEntries).all();
+    const lineA = rows.find((r) => {
+      const scope = r.scope as { kind: string; lineItemId?: string };
+      return scope.kind === 'line' && scope.lineItemId === 'A';
+    })!;
+    expect(lineA.quantity).toBe(2);
+    expect(lineA.taxCode).toBeNull(); // NY fixture carries no tax_code
+  });
 });
 
 describe('applyDelta()', () => {
