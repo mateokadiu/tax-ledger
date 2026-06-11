@@ -5,16 +5,16 @@
  *
  * Walkthrough:
  *   1. Load a mock Avalara response from JSON.
- *   2. Map it into the engine-agnostic OrderInput shape (this is what
- *      `@tax-ledger/sources-avalara` will do in v0.2 — for now we inline it).
+ *   2. Map it into the engine-agnostic OrderInput shape (the `@tax-ledger/avalara`
+ *      package does this for real; inlined here to keep the example dep-free).
  *   3. split() it to a Ledger.
- *   4. refund() one beer (line A, half quantity by amountCents).
- *   5. Print the live ledger's per-jurisdiction net.
+ *   4. refund() half of line A by value; print the canonical component totals.
+ *   5. Quantity-refund 1 of 2 units, then reconcile() against the engine total.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { split, refund, type OrderInput } from '@tax-ledger/core';
+import { split, refund, reconcile, type OrderInput } from '@tax-ledger/core';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -153,10 +153,30 @@ for (const r of delta) {
 console.log(`  sum(delta) = ${delta.reduce((a, r) => a + r.amountCents, 0)}c`);
 
 const live = ledger.with(delta);
-console.log('\n--- 4) live ledger after refund');
-console.log(`  sales tax:    ${live.netCents({ taxType: 'sales' })}c`);
-console.log(`  shipping tax: ${live.netCents({ taxType: 'shipping' })}c`);
-console.log(`  additional:   ${live.netCents({ taxType: 'additional' })}c`);
-console.log(`  deposit:      ${live.netCents({ taxType: 'bottle_deposit' })}c`);
-console.log(`  total:        ${live.rows.reduce((a, r) => a + r.amountCents, 0)}c`);
+console.log('\n--- 4) live ledger after refund — component totals');
+const totals = live.toComponentTotals();
+console.log(`  salesTax:       ${totals.salesTax}c`);
+console.log(`  shippingTax:    ${totals.shippingTax}c`);
+console.log(`  bottleDeposits: ${totals.bottleDeposits}c`);
+console.log(`  vat:            ${totals.vat}c`);
+console.log(`  additional:     ${totals.additional}c`);
+console.log(`  total:          ${totals.total}c`);
 console.log('  (= original total - refunded total, to the cent.)');
+
+// 5) Quantity-based refund + reconcile against the engine's reported total.
+console.log('\n--- 5) quantity refund: return 1 of 2 units of line A');
+const fresh = split(input);
+const qtyDelta = refund(fresh, {
+  refundId: 'rf_demo_qty',
+  lines: [{ lineItemId: 'A', quantity: 1 }],
+});
+const qtySum = qtyDelta.reduce((a, r) => a + r.amountCents, 0);
+console.log(`  sum(delta) = ${qtySum}c  (one unit of line A's ${fresh.netCents({ lineItemId: 'A' })}c net)`);
+// reconcile() folds the delta in and asserts it matches what the engine says it
+// refunded — surfacing drift instead of silently accepting it.
+const reconciled = reconcile(fresh, qtyDelta, { expectTotalCents: qtySum });
+console.log(`  reconciled rows: ${reconciled.rows.length} (was ${fresh.rows.length})`);
+console.log('  rollup by taxType:');
+for (const g of reconciled.rollupBy(['taxType'])) {
+  console.log(`    ${g.key.taxType}: ${g.amountCents}c (${g.count} rows)`);
+}
