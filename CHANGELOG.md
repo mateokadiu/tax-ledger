@@ -1,5 +1,33 @@
 # changelog
 
+## 1.1.0 — unreleased
+
+Correctness + reconciliation pass. Quantity refunds actually work, the pipeline
+is deterministic, the model carries enough engine metadata to reconcile, and the
+ledger gained the reporting/reconcile verbs real systems need.
+
+### added
+
+- **Quantity-based refunds.** `refund(ledger, { lines: [{ lineItemId, quantity }] })` now recovers the line's remaining units from the ledger and removes a proportional slice. Previously `computeRemainingQuantity` was a stub that returned `1`, so a quantity refund either threw or silently refunded the whole line.
+- **Deterministic, replayable output.** `split` / `refund` / `revise` / `partialCapture` accept an options bag `{ now?, generateId? }`. Pass deterministic implementations for snapshot tests or event-sourced replays; omit for the default real clock + UUIDv7.
+- **`'vat'` tax type** plus optional `taxCode`, `taxBehavior` (`inclusive` | `exclusive`), and `engineTaxType` (the engine's native label) on both `LineItemTax` (input) and `LedgerEntry` (output). These flow through `split`/`refund`/`revise`/`partialCapture` and are persisted by the Drizzle adapter.
+- **`reconcile(ledger, delta, { expectTotalCents?, toleranceCents? })`** — fold an engine-provided refund/reversal/return into the ledger and assert it sums to what the engine reported (within tolerance), catching drift. Production tax engines (Stripe Tax reversals, Avalara refund/adjust) re-quote refund tax; this is the verb that records and verifies that authoritative delta locally.
+- **Reporting helpers on `Ledger`:** `toComponentTotals()` → `{ salesTax, shippingTax, bottleDeposits, vat, additional, total }` (the canonical components a buyer-tax payload needs), and `rollupBy([...])` to group/sum by `taxType` / `jurisdictionType` / `jurisdictionCode` / `scope` / `origin` / `currency`.
+- Drizzle PG + SQLite schemas and the migration generator now persist `tax_code`, `tax_behavior`, `engine_tax_type`, and `quantity` (all nullable).
+
+### changed
+
+- **Stripe Tax adapter** maps the value-added family (`vat` / `gst` / `hst` / `igst` / `jct` / `pst` / `qst`) to `taxType: 'vat'` instead of collapsing to `additional`, and carries each line's `tax_code` + `tax_behavior` and the breakdown's native `tax_type`.
+- **Avalara adapter** detects real Avalara `Bottle` deposits (the default predicate previously only matched `BottleDeposit` / "container deposit"), maps Avalara `Input` / `Output` / VAT tax types to `'vat'`, and carries each line's `taxCode` + `taxIncluded` behavior + native taxType.
+- Residual-cent placement in `refund`/`partialCapture` now breaks remainder ties on stable row position rather than the (random) row id, so the same input allocates identically across runs.
+- Adapter + drizzle `test` scripts no longer pass `--passWithNoTests` (every package has real tests).
+- `pnpm test` now runs 128 tests across the 5 packages.
+
+### fixed
+
+- Quantity-based refunds (see above) — the headline lifecycle feature was non-functional in 1.0.0.
+- Allocation is now genuinely replay-stable; the previous tiebreak depended on non-deterministic UUID ordering.
+
 ## 1.0.0 — 2026-07-04
 
 First stable release. Engine adapters, persistence, and multi-currency are in.
