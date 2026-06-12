@@ -84,7 +84,7 @@ describe('toTaxInput()', () => {
     const lineA = input.lines[0]!;
     expect(lineA.taxes).toHaveLength(1);
     const row = lineA.taxes[0]!;
-    expect(row.jurisdiction).toEqual({ type: 'country', code: 'DE' });
+    expect(row.jurisdiction).toMatchObject({ type: 'country', code: 'DE', country: 'DE', name: 'Germany' });
     expect(row.taxType).toBe('vat');
     expect(row.engineTaxType).toBe('vat');
     expect(row.taxBehavior).toBe('exclusive');

@@ -21,6 +21,12 @@ export type JurisdictionType = z.infer<typeof JurisdictionTypeSchema>;
 export const JurisdictionSchema = z.object({
   type: JurisdictionTypeSchema,
   code: z.string().min(1),
+  /** ISO 3166-1 alpha-2 country, when the engine provides it. */
+  country: z.string().optional(),
+  /** State / province / region label, when distinct from `code`. */
+  region: z.string().optional(),
+  /** Human-readable jurisdiction name (e.g. "NEW YORK CITY"). */
+  name: z.string().optional(),
 });
 export type Jurisdiction = z.infer<typeof JurisdictionSchema>;
 

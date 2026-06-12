@@ -119,7 +119,13 @@ export function toTaxInput(
 function mapJurisdiction(j: StripeTaxJurisdiction): Jurisdiction {
   const level = mapLevel(j.level);
   const code = pickJurisdictionCode(j, level);
-  return { type: level, code };
+  return {
+    type: level,
+    code,
+    country: j.country.toUpperCase(),
+    region: j.state,
+    name: j.display_name,
+  };
 }
 
 function mapLevel(level: StripeTaxJurisdiction['level']): JurisdictionType {

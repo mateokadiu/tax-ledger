@@ -47,8 +47,8 @@ describe('toTaxInput()', () => {
     const input = toTaxInput(loadFixture('ny-three-line.json'));
     const lineA = input.lines.find((l) => l.lineItemId === 'A')!;
     expect(lineA.deposits).toHaveLength(1);
-    expect(lineA.deposits?.[0]).toEqual({
-      jurisdiction: { type: 'state', code: 'NY' },
+    expect(lineA.deposits?.[0]).toMatchObject({
+      jurisdiction: { type: 'state', code: 'NY', country: 'US', name: 'NEW YORK' },
       amountCents: 1000,
     });
     // and the deposit row is NOT in taxes[]

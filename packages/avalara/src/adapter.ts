@@ -1,4 +1,4 @@
-import type { TaxInput, JurisdictionType } from '@tax-ledger/core';
+import type { TaxInput, Jurisdiction, JurisdictionType } from '@tax-ledger/core';
 
 type LineTaxType = 'sales' | 'shipping' | 'vat' | 'additional';
 import {
@@ -95,10 +95,7 @@ export function toTaxInput(
     const taxes: TaxInput['lines'][number]['taxes'] = [];
     const deposits: NonNullable<TaxInput['lines'][number]['deposits']> = [];
     for (const d of ln.details) {
-      const jurisdiction = {
-        type: mapJurisdictionType(d.jurisdictionType),
-        code: d.jurisdictionCode ?? d.jurisName ?? d.region ?? 'UNKNOWN',
-      };
+      const jurisdiction = buildJurisdiction(d);
       const cents = toCents(d.tax);
       if (cents <= 0) continue;
       if (depositPredicate(d)) {
@@ -129,10 +126,7 @@ export function toTaxInput(
     const taxes = ln.details
       .filter((d) => toCents(d.tax) > 0)
       .map((d) => ({
-        jurisdiction: {
-          type: mapJurisdictionType(d.jurisdictionType),
-          code: d.jurisdictionCode ?? d.jurisName ?? d.region ?? 'UNKNOWN',
-        },
+        jurisdiction: buildJurisdiction(d),
         taxType: mapTaxType(d.taxType),
         amountCents: toCents(d.tax),
         taxCode: ln.taxCode,
@@ -162,6 +156,16 @@ function toCents(dollars: number): number {
   if (!Number.isFinite(dollars)) return 0;
   const scaled = Math.round(dollars * 100 + Number.EPSILON);
   return scaled;
+}
+
+function buildJurisdiction(d: AvalaraTransactionLineDetail): Jurisdiction {
+  return {
+    type: mapJurisdictionType(d.jurisdictionType),
+    code: d.jurisdictionCode ?? d.jurisName ?? d.region ?? 'UNKNOWN',
+    country: d.country,
+    region: d.region,
+    name: d.jurisName,
+  };
 }
 
 function mapJurisdictionType(j: AvalaraJurisdictionType): JurisdictionType {
