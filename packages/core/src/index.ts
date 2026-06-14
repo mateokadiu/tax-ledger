@@ -14,3 +14,9 @@ export {
   type RollupRow,
 } from './ledger.js';
 export { allocate } from './allocator.js';
+export {
+  minorUnitExponent,
+  toMinorUnits,
+  fromMinorUnits,
+  formatMinorUnits,
+} from './currency.js';
