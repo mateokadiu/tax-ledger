@@ -1,6 +1,7 @@
 import { uuidv7 } from './ids.js';
 import {
   OrderInputSchema,
+  type CurrencyCode,
   type LedgerEntry,
   type OrderInput,
   type OrderInputParsed,
@@ -118,7 +119,7 @@ export function split(input: OrderInput): Ledger {
 
 function makeRow(args: {
   orderId: string;
-  currency: string;
+  currency: CurrencyCode;
   scope: LedgerScope;
   jurisdiction: LedgerEntry['jurisdiction'];
   taxType: TaxType;

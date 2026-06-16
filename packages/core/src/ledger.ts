@@ -1,16 +1,20 @@
-import type { LedgerEntry, TaxType } from './types.js';
+import type { CurrencyCode, LedgerEntry, TaxType } from './types.js';
 
 /**
  * Append-only collection of ledger entries for a single order. Returned by
  * `split()` and threaded through reconcile ops. `with()` creates a new ledger
  * with delta rows appended — never mutates.
+ *
+ * Every entry in `rows` shares the ledger's `currency` (ISO-4217). Mixing
+ * currencies in a single ledger is a domain error — cross-currency
+ * reconciliation goes through a separate FX-aware boundary upstream.
  */
 export class Ledger {
   readonly rows: ReadonlyArray<LedgerEntry>;
 
   constructor(
     readonly orderId: string,
-    readonly currency: string,
+    readonly currency: CurrencyCode,
     rows: ReadonlyArray<LedgerEntry>,
   ) {
     this.rows = rows;

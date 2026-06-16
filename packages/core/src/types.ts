@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+// ---------- Currency ----------
+
+/**
+ * ISO-4217 currency code. We don't enumerate the full list — the world
+ * mints new currencies, and old engines emit unusual ones (XAU, XDR). We
+ * only enforce shape: three uppercase ASCII letters. Adapters are expected
+ * to normalize lowercase or whitespace before calling in.
+ */
+export const CurrencyCodeSchema = z
+  .string()
+  .regex(/^[A-Z]{3}$/, 'currency must be ISO-4217 (three uppercase letters)');
+export type CurrencyCode = z.infer<typeof CurrencyCodeSchema>;
+
 // ---------- Jurisdiction ----------
 
 export const JurisdictionTypeSchema = z.enum(['country', 'state', 'county', 'city', 'special']);
@@ -78,7 +91,7 @@ export type ShippingContext = z.infer<typeof ShippingContextSchema>;
 
 export const OrderInputSchema = z.object({
   orderId: z.string().min(1),
-  currency: z.string().length(3),
+  currency: CurrencyCodeSchema,
   engineRef: z.string().min(1),
   totalTaxCents: z.number().int().nonnegative(),
   shipping: ShippingContextSchema,
@@ -87,6 +100,15 @@ export const OrderInputSchema = z.object({
 });
 export type OrderInput = z.input<typeof OrderInputSchema>;
 export type OrderInputParsed = z.output<typeof OrderInputSchema>;
+
+/**
+ * Canonical engine-agnostic input. `OrderInput` is kept as an alias for v0.1
+ * compatibility — `TaxInput` is the name adapters and downstream code should
+ * use going forward.
+ */
+export const TaxInputSchema = OrderInputSchema;
+export type TaxInput = OrderInput;
+export type TaxInputParsed = OrderInputParsed;
 
 // ---------- Output: LedgerEntry ----------
 
@@ -108,7 +130,7 @@ export type LedgerOrigin = z.infer<typeof LedgerOriginSchema>;
 export const LedgerEntrySchema = z.object({
   id: z.string().min(1),
   orderId: z.string().min(1),
-  currency: z.string().length(3),
+  currency: CurrencyCodeSchema,
   scope: LedgerScopeSchema,
   jurisdiction: JurisdictionSchema,
   taxType: TaxTypeSchema,
