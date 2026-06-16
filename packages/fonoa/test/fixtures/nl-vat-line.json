@@ -1,0 +1,28 @@
+{
+  "id": "calc_nl_001",
+  "result": {
+    "total_gross": 121.00,
+    "total_net": 100.00,
+    "total_indirect_tax_amount": 21.00,
+    "items": [
+      {
+        "id": "A",
+        "gross_amount": 121.00,
+        "net_amount": 100.00,
+        "indirect_tax_amount": 21.00,
+        "effective_indirect_tax_rate": 0.21,
+        "tax_breakdown": [
+          {
+            "country": "NL",
+            "country_name": "Netherlands",
+            "name": "BTW",
+            "rate_class": "standard",
+            "tax_level": "country",
+            "rate": 0.21,
+            "amount": 21.00
+          }
+        ]
+      }
+    ]
+  }
+}
