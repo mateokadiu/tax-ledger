@@ -1,3 +1,4 @@
+import { CurrencyMismatchError } from './errors.js';
 import type { CurrencyCode, LedgerEntry, TaxType } from './types.js';
 
 /**
@@ -20,9 +21,21 @@ export class Ledger {
     this.rows = rows;
   }
 
-  /** Append delta rows immutably. */
+  /**
+   * Append delta rows immutably. Refuses rows whose currency does not match
+   * the ledger's — cross-currency reconciliation has to be resolved upstream
+   * before the FX-adjusted figures hit the ledger.
+   */
   with(delta: ReadonlyArray<LedgerEntry>): Ledger {
     if (delta.length === 0) return this;
+    for (const r of delta) {
+      if (r.currency !== this.currency) {
+        throw new CurrencyMismatchError(
+          `cannot append entry in ${r.currency} to ledger denominated in ${this.currency}`,
+          { expected: this.currency, actual: r.currency },
+        );
+      }
+    }
     return new Ledger(this.orderId, this.currency, [...this.rows, ...delta]);
   }
 

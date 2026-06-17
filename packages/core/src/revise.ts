@@ -6,6 +6,7 @@ import {
   type ReviseSpec,
   type TaxType,
 } from './types.js';
+import { CurrencyMismatchError } from './errors.js';
 import { split } from './split.js';
 import type { Ledger } from './ledger.js';
 
@@ -44,6 +45,12 @@ function keyOf(r: { scope: LedgerEntry['scope']; jurisdiction: LedgerEntry['juri
  */
 export function revise(ledger: Ledger, spec: ReviseSpec): LedgerEntry[] {
   const parsed = ReviseSpecSchema.parse(spec);
+  if (parsed.newOrder.currency !== ledger.currency) {
+    throw new CurrencyMismatchError(
+      `revise: new order in ${parsed.newOrder.currency} cannot reconcile against ledger in ${ledger.currency}`,
+      { expected: ledger.currency, actual: parsed.newOrder.currency },
+    );
+  }
   const origin: LedgerOrigin = { kind: 'revision', revisionId: parsed.revisionId };
   const createdAt = new Date().toISOString();
 

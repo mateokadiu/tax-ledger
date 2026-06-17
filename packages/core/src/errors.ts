@@ -32,3 +32,18 @@ export class OverRefundError extends TaxLedgerError {
 export class AllocationError extends TaxLedgerError {
   override readonly name = 'AllocationError';
 }
+
+/**
+ * Two ledger entries / inputs / deltas were referenced in the same operation
+ * with conflicting ISO-4217 currency codes. There's no defensible automatic
+ * conversion — the caller must reconcile FX outside the ledger boundary.
+ */
+export class CurrencyMismatchError extends TaxLedgerError {
+  override readonly name = 'CurrencyMismatchError';
+  constructor(
+    message: string,
+    public readonly details: { expected: string; actual: string },
+  ) {
+    super(message);
+  }
+}
