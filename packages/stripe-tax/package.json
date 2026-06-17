@@ -1,6 +1,6 @@
 {
   "name": "@tax-ledger/stripe-tax",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Stripe Tax Tax.Calculation adapter for @tax-ledger/core. Maps line_items[].tax_breakdown[] into a normalized TaxInput.",
   "license": "MIT",
   "author": "Mateo Kadiu",

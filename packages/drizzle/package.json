@@ -1,6 +1,6 @@
 {
   "name": "@tax-ledger/drizzle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Opinionated Drizzle ORM adapter for @tax-ledger/core. Provides PG + SQLite-compatible schema for ledger entries and deltas, persistence helpers, and a migration generator.",
   "license": "MIT",
   "author": "Mateo Kadiu",
