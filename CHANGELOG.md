@@ -1,6 +1,6 @@
 # changelog
 
-## 1.1.0 — unreleased
+## 1.1.0 — 2026-07-15
 
 Correctness + reconciliation pass. Quantity refunds actually work, the pipeline
 is deterministic, the model carries enough engine metadata to reconcile, and the
@@ -14,6 +14,10 @@ ledger gained the reporting/reconcile verbs real systems need.
 - **`reconcile(ledger, delta, { expectTotalCents?, toleranceCents? })`** — fold an engine-provided refund/reversal/return into the ledger and assert it sums to what the engine reported (within tolerance), catching drift. Production tax engines (Stripe Tax reversals, Avalara refund/adjust) re-quote refund tax; this is the verb that records and verifies that authoritative delta locally.
 - **Reporting helpers on `Ledger`:** `toComponentTotals()` → `{ salesTax, shippingTax, bottleDeposits, vat, additional, total }` (the canonical components a buyer-tax payload needs), and `rollupBy([...])` to group/sum by `taxType` / `jurisdictionType` / `jurisdictionCode` / `scope` / `origin` / `currency`.
 - Drizzle PG + SQLite schemas and the migration generator now persist `tax_code`, `tax_behavior`, `engine_tax_type`, and `quantity` (all nullable).
+- **Richer `Jurisdiction`** — optional `country` / `region` / `name`, carried from the engine and persisted as nullable drizzle columns, so the ledger reconciles 1-1 with the engine instead of collapsing to `type` + `code`.
+- **Stripe reversal bridge** in `@tax-ledger/stripe-tax`: `toStripeReversal()` builds `create_reversal` params (full / flat / per-line) and `reversalTotals()` reads the reversed tax back off the response — pair with `reconcile()` to prove the ledger agrees with Stripe.
+- **Currency minor-unit helpers** in core — `minorUnitExponent` / `toMinorUnits` / `fromMinorUnits` / `formatMinorUnits` (JPY=0, KWD=3, …), so multi-currency isn't implicitly 2-decimal.
+- **`@tax-ledger/fonoa`** — new adapter for Fonoa's Tax calculation response (EU VAT / GST). Maps `result.items[].tax_breakdown[]` into `TaxInput`, honors tax-inclusive pricing, and treats reverse-charge / exempt lines as zero-tax.
 
 ### changed
 
@@ -21,7 +25,7 @@ ledger gained the reporting/reconcile verbs real systems need.
 - **Avalara adapter** detects real Avalara `Bottle` deposits (the default predicate previously only matched `BottleDeposit` / "container deposit"), maps Avalara `Input` / `Output` / VAT tax types to `'vat'`, and carries each line's `taxCode` + `taxIncluded` behavior + native taxType.
 - Residual-cent placement in `refund`/`partialCapture` now breaks remainder ties on stable row position rather than the (random) row id, so the same input allocates identically across runs.
 - Adapter + drizzle `test` scripts no longer pass `--passWithNoTests` (every package has real tests).
-- `pnpm test` now runs 128 tests across the 5 packages.
+- `pnpm test` now runs 147 tests across the 6 packages.
 
 ### fixed
 
