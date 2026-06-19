@@ -1,0 +1,50 @@
+{
+  "name": "@tax-ledger/drizzle",
+  "version": "0.2.0",
+  "description": "Opinionated Drizzle ORM adapter for @tax-ledger/core. Provides PG + SQLite-compatible schema for ledger entries and deltas, persistence helpers, and a migration generator.",
+  "license": "MIT",
+  "author": "Mateo Kadiu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mateokadiu/tax-ledger.git",
+    "directory": "packages/drizzle"
+  },
+  "keywords": ["tax", "drizzle", "postgres", "sqlite", "tax-ledger", "persistence"],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'lint TBD'",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@tax-ledger/core": "workspace:*",
+    "drizzle-orm": "^0.36.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "better-sqlite3": "^11.5.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": { "optional": true }
+  },
+  "publishConfig": { "access": "public" }
+}

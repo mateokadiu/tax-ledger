@@ -1,0 +1,42 @@
+{
+  "name": "@tax-ledger/avalara",
+  "version": "0.2.0",
+  "description": "Avalara CreateTransactionModel response adapter for @tax-ledger/core. Maps lines[].details[] + jurisdiction breakdown into a normalized TaxInput.",
+  "license": "MIT",
+  "author": "Mateo Kadiu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mateokadiu/tax-ledger.git",
+    "directory": "packages/avalara"
+  },
+  "keywords": ["tax", "avalara", "adapter", "tax-ledger", "sales-tax"],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'lint TBD'",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@tax-ledger/core": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "publishConfig": { "access": "public" }
+}
