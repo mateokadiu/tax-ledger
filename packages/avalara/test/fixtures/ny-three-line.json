@@ -1,0 +1,159 @@
+{
+  "id": 880011223,
+  "code": "ORDER-AV-001",
+  "companyId": 12345,
+  "date": "2026-06-23",
+  "status": "Committed",
+  "type": "SalesInvoice",
+  "currencyCode": "USD",
+  "customerCode": "CUST-7",
+  "totalAmount": 56.50,
+  "totalDiscount": 0.0,
+  "totalExempt": 0.0,
+  "totalTax": 4.12,
+  "totalTaxable": 75.49,
+  "totalTaxCalculated": 4.12,
+  "locked": false,
+  "region": "NY",
+  "country": "US",
+  "version": 1,
+  "lines": [
+    {
+      "id": 1001,
+      "transactionId": 880011223,
+      "lineNumber": "1",
+      "description": "IPA 6-pack",
+      "itemCode": "BEER-IPA-6",
+      "ref1": "A",
+      "quantity": 2,
+      "lineAmount": 49.98,
+      "taxableAmount": 49.98,
+      "exemptAmount": 0.0,
+      "tax": 2.31,
+      "taxCalculated": 2.31,
+      "taxIncluded": false,
+      "isItemTaxable": true,
+      "details": [
+        {
+          "id": 50001,
+          "transactionLineId": 1001,
+          "jurisdictionId": 1,
+          "jurisdictionType": "State",
+          "jurisdictionCode": "NY",
+          "jurisName": "NEW YORK",
+          "taxType": "Sales",
+          "rate": 0.04,
+          "tax": 1.50,
+          "taxableAmount": 49.98,
+          "taxCalculated": 1.50,
+          "region": "NY",
+          "country": "US"
+        },
+        {
+          "id": 50002,
+          "transactionLineId": 1001,
+          "jurisdictionId": 5,
+          "jurisdictionType": "County",
+          "jurisdictionCode": "NY-NYC",
+          "jurisName": "NEW YORK CITY",
+          "taxType": "Sales",
+          "rate": 0.01,
+          "tax": 0.45,
+          "taxableAmount": 49.98,
+          "taxCalculated": 0.45,
+          "region": "NY",
+          "country": "US"
+        },
+        {
+          "id": 50003,
+          "transactionLineId": 1001,
+          "jurisdictionId": 6,
+          "jurisdictionType": "City",
+          "jurisdictionCode": "NY-NYC",
+          "jurisName": "NEW YORK",
+          "taxType": "Sales",
+          "rate": 0.008,
+          "tax": 0.36,
+          "taxableAmount": 49.98,
+          "taxCalculated": 0.36,
+          "region": "NY",
+          "country": "US"
+        },
+        {
+          "id": 50004,
+          "transactionLineId": 1001,
+          "jurisdictionId": 1,
+          "jurisdictionType": "State",
+          "jurisdictionCode": "NY",
+          "jurisName": "NEW YORK",
+          "taxType": "BottleDeposit",
+          "rate": 0.0,
+          "tax": 10.00,
+          "taxableAmount": 0.0,
+          "taxCalculated": 10.00,
+          "region": "NY",
+          "country": "US"
+        }
+      ]
+    },
+    {
+      "id": 1002,
+      "transactionId": 880011223,
+      "lineNumber": "2",
+      "description": "Pretzel snack",
+      "itemCode": "SNACK-PRZ",
+      "ref1": "B",
+      "quantity": 1,
+      "lineAmount": 19.99,
+      "taxableAmount": 19.99,
+      "tax": 1.78,
+      "taxCalculated": 1.78,
+      "taxIncluded": false,
+      "isItemTaxable": true,
+      "details": [
+        {
+          "jurisdictionType": "State",
+          "jurisdictionCode": "NY",
+          "taxType": "Sales",
+          "tax": 1.20,
+          "taxCalculated": 1.20
+        },
+        {
+          "jurisdictionType": "County",
+          "jurisdictionCode": "NY-NYC",
+          "taxType": "Sales",
+          "tax": 0.36,
+          "taxCalculated": 0.36
+        },
+        {
+          "jurisdictionType": "City",
+          "jurisdictionCode": "NY-NYC",
+          "taxType": "Sales",
+          "tax": 0.22,
+          "taxCalculated": 0.22
+        }
+      ]
+    },
+    {
+      "id": 1003,
+      "transactionId": 880011223,
+      "lineNumber": "3",
+      "description": "Shipping",
+      "itemCode": "SHIP-STD",
+      "ref1": "shippingFee",
+      "quantity": 1,
+      "lineAmount": 6.52,
+      "tax": 0.03,
+      "taxCalculated": 0.03,
+      "details": [
+        {
+          "jurisdictionType": "State",
+          "jurisdictionCode": "NY",
+          "taxType": "Shipping",
+          "tax": 0.03,
+          "taxCalculated": 0.03
+        }
+      ]
+    }
+  ]
+}
