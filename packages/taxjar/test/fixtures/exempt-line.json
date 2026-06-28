@@ -1,0 +1,34 @@
+{
+  "tax": {
+    "order_total_amount": 50.00,
+    "shipping": 0.0,
+    "taxable_amount": 0.0,
+    "amount_to_collect": 0.0,
+    "rate": 0.0,
+    "has_nexus": true,
+    "freight_taxable": false,
+    "tax_source": "destination",
+    "exemption_type": "resale",
+    "jurisdictions": {
+      "country": "US",
+      "state": "CA"
+    },
+    "breakdown": {
+      "taxable_amount": 0.0,
+      "tax_collectable": 0.0,
+      "combined_tax_rate": 0.0,
+      "line_items": [
+        {
+          "id": "A",
+          "taxable_amount": 0.0,
+          "tax_collectable": 0.0,
+          "combined_tax_rate": 0.0,
+          "state_amount": 0.0,
+          "county_amount": 0.0,
+          "city_amount": 0.0,
+          "special_district_amount": 0.0
+        }
+      ]
+    }
+  }
+}

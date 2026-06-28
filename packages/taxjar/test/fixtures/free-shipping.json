@@ -1,0 +1,35 @@
+{
+  "tax": {
+    "order_total_amount": 24.99,
+    "shipping": 0.0,
+    "taxable_amount": 24.99,
+    "amount_to_collect": 2.12,
+    "rate": 0.085,
+    "has_nexus": true,
+    "freight_taxable": false,
+    "tax_source": "destination",
+    "jurisdictions": {
+      "country": "US",
+      "state": "CA",
+      "county": "ALAMEDA",
+      "city": "OAKLAND"
+    },
+    "breakdown": {
+      "taxable_amount": 24.99,
+      "tax_collectable": 2.12,
+      "combined_tax_rate": 0.085,
+      "line_items": [
+        {
+          "id": "A",
+          "taxable_amount": 24.99,
+          "tax_collectable": 2.12,
+          "combined_tax_rate": 0.085,
+          "state_amount": 1.56,
+          "county_amount": 0.06,
+          "city_amount": 0.0,
+          "special_district_amount": 0.50
+        }
+      ]
+    }
+  }
+}
