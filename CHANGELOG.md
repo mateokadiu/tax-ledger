@@ -1,6 +1,6 @@
 # changelog
 
-## 1.1.0 — 2026-07-15
+## 1.1.0 — 2026-06-17
 
 Correctness + reconciliation pass. Quantity refunds actually work, the pipeline
 is deterministic, the model carries enough engine metadata to reconcile, and the
@@ -32,7 +32,7 @@ ledger gained the reporting/reconcile verbs real systems need.
 - Quantity-based refunds (see above) — the headline lifecycle feature was non-functional in 1.0.0.
 - Allocation is now genuinely replay-stable; the previous tiebreak depended on non-deterministic UUID ordering.
 
-## 1.0.0 — 2026-07-04
+## 1.0.0 — 2026-06-06
 
 First stable release. Engine adapters, persistence, and multi-currency are in.
 
